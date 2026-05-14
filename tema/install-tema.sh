@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==========================================
-# INSTALLER TEMA PREMIUM - MANZ4VPS
+# INSTALLER TEMA PREMIUM - MANZ4VPS (FIXED)
 # ==========================================
 
 RED='\033[1;31m'
@@ -39,7 +39,7 @@ install_theme() {
 
     cd "$PTERO_DIR" || exit
 
-    echo -e "${CYAN}[1/4] Mendownload file $THEME_FILE dari GitHub...${RESET}"
+    echo -e "${CYAN}[1/5] Mendownload file $THEME_FILE dari GitHub...${RESET}"
     wget -qO "$THEME_FILE" "$THEME_URL"
 
     if [ ! -f "$THEME_FILE" ]; then
@@ -47,15 +47,22 @@ install_theme() {
         return 1
     fi
 
-    echo -e "${CYAN}[2/4] Mengekstrak file tema (Menimpa file asli)...${RESET}"
+    echo -e "${CYAN}[2/5] Mengekstrak file tema...${RESET}"
+    apt-get install -y unzip > /dev/null 2>&1
     unzip -oq "$THEME_FILE"
     rm -f "$THEME_FILE"
 
-    echo -e "${CYAN}[3/4] Menginstall dependencies (Yarn)...${RESET}"
+    echo -e "${CYAN}[3/5] Memastikan NodeJS & Yarn terinstall (Mencegah error 'command not found')...${RESET}"
+    # Install Node.js v20 dan Yarn secara otomatis
+    apt-get install -y curl > /dev/null 2>&1
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
+    apt-get install -y nodejs > /dev/null 2>&1
     npm i -g yarn > /dev/null 2>&1
+
+    echo -e "${CYAN}[4/5] Menginstall dependencies panel (Yarn install)...${RESET}"
     yarn install > /dev/null 2>&1
 
-    echo -e "${CYAN}[4/4] Membangun ulang panel (Proses ini butuh waktu 3-10 menit)...${RESET}"
+    echo -e "${CYAN}[5/5] Membangun ulang panel (Proses ini butuh waktu 3-10 menit)...${RESET}"
     echo -e "${YELLOW}⚠️ JANGAN TUTUP TERMINAL SAAT PROSES INI BERJALAN! ⚠️${RESET}"
 
     export NODE_OPTIONS=--openssl-legacy-provider
@@ -63,6 +70,11 @@ install_theme() {
     yarn build:production
     php artisan view:clear
     php artisan optimize:clear
+
+    # Fix Permissions biar Nginx/Apache gak Error 500
+    echo -e "${CYAN}[INFO] Memperbaiki perizinan file...${RESET}"
+    chown -R www-data:www-data "$PTERO_DIR"
+    chmod -R 755 "$PTERO_DIR"/storage "$PTERO_DIR"/bootstrap/cache
 
     echo -e "\n${GREEN}✅ Instalasi Tema $THEME_NAME Selesai! Silakan refresh website panelmu.${RESET}"
     
